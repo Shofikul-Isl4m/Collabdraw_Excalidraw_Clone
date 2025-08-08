@@ -1,8 +1,8 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-import authRouter from "./routers/auth.router";
-import roomRouter from "./routers/room.router";
-import contentRouter from "./routers/content.router";
+import authRouter from "./routes/auth.router";
+import roomRouter from "./routes/room.router";
+import contentRouter from "./routes/content.router";
 
 const app = express();
 
