@@ -49,8 +49,8 @@ model Chat {
   content      String
   user         User   @relation(fields : [userId],references:id)
   userId       String  
-  admin        Room   @relation(fields: [adminId ],references:id)
-  adminId      String 
+  room        Room   @relation(fields: [roomId ],references:id)
+  roomId      String 
   createdAt    DateTime  @default(now())
  }
 
