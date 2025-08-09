@@ -196,3 +196,30 @@ export async function getAllChatMessages(req: Request, res: Response) {
     });
   }
 }
+
+export async function getAllDraws(req: Request, res: Response) {
+  const userId = req.userId;
+  if (!userId) {
+    res.status(401).json({
+      message: "userId required",
+    });
+  }
+
+  const { roomId } = req.params;
+  try {
+    const draws = await prismaClient.draw.findMany({
+      where: {
+        roomId: roomId,
+      },
+    });
+
+    res.status(200).json({
+      draws,
+    });
+  } catch (error) {
+    console.error("error fetching draws", error);
+    res.status(500).json({
+      message: "error occure during fetching draws,try again later ",
+    });
+  }
+}
