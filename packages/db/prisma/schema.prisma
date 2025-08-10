@@ -75,7 +75,7 @@ model Chat {
    font        String?
    fontSize    String?
    startX      Int?
-   StartY      Int?
+   startY      Int?
    endX        Int?
    endY        Int?
    text        String?
