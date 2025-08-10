@@ -38,7 +38,7 @@ model Room {
      admin         User       @relation(fields:[adminId],references:id)
      adminId       String
      Chat          Chat[]
-     draw          Draw[]
+     Draw          Draw[]
      createdAt     DateTime   @default(now())
 }
 
