@@ -27,5 +27,3 @@ export const WebSocketMessageSchema = z.object({
   userId: z.string(),
   content: z.string().optional(),
 });
-
-export type WebSocketMessage = z.infer<typeof WebSocketMessageSchema>;
