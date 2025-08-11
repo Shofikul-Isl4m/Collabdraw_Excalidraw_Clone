@@ -26,7 +26,7 @@ const middleware = (req: Request, res: Response, next: NextFunction) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     if (typeof decoded == "object") {
-      req.userId = decoded.userId;
+      req.userId = decoded.id;
       next();
     } else {
       res.status(401).json({

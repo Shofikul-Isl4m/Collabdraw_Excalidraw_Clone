@@ -1,6 +1,7 @@
 import { WebSocketMessageSchema } from "@repo/common/types";
 import { prismaClient } from "@repo/db/client";
 import { WebSocket, WebSocketServer } from "ws";
+import jwt, { JwtPayload } from "jsonwebtoken";
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -227,4 +228,80 @@ wss.on("connection", async (ws, request) => {
         break;
     }
   });
+  ws.on("close", () => {
+    userVerificationStatus.delete(ws);
+    for (const [roomId, connections] of activeRooms.entries()) {
+      const updatedConnections = connections.filter((conn) => {
+        conn.ws !== ws;
+      });
+      if (updatedConnections.length === 0) {
+        activeRooms.delete(roomId);
+      } else {
+        activeRooms.set(roomId, updatedConnections);
+      }
+    }
+  });
+  if (!token) {
+    console.log("token not found");
+    ws.send(
+      JSON.stringify({
+        type: "error_message",
+        content: "token not found",
+      })
+    );
+    ws.close();
+    return;
+  }
+
+  try {
+    console.log(process.env.JWT_SECRET);
+    const verified = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    if (!verified.id) {
+      ws.send(
+        JSON.stringify({
+          type: "error_message",
+          content: "Token not found",
+        })
+      );
+      ws.close();
+      return;
+    }
+
+    const userFound = await prismaClient.user.findFirst({
+      where: {
+        id: verified.id,
+      },
+    });
+
+    if (!userFound) {
+      ws.send(
+        JSON.stringify({
+          type: "error_message",
+          content: "error verifying user",
+        })
+      );
+      ws.close();
+      return;
+    }
+
+    userVerificationStatus.set(ws, { verification: true, userId: verified.id });
+
+    ws.send(
+      JSON.stringify({
+        type: "connection_ready",
+        userId: verified.id,
+      })
+    );
+  } catch (e) {
+    console.log(e);
+    console.log("Error verifing user");
+    ws.send(
+      JSON.stringify({
+        type: "error_message",
+        content: "Error verifing User",
+      })
+    );
+    ws.close();
+    return;
+  }
 });

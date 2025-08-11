@@ -29,6 +29,7 @@ export async function signUpController(req: Request, res: Response) {
     });
 
     const user = {
+      id: creatUser.id,
       username: creatUser.username,
       password: creatUser.password,
       name: creatUser.name,
@@ -91,6 +92,7 @@ export async function signInController(req: Request, res: Response) {
     }
 
     const user = {
+      id: userFound.id,
       username: userFound.username,
       password: userFound.password,
     };
