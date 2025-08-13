@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 @source "../../../apps/**/*.{ts,tsx}";
 @source "../../../components/**/*.{ts,tsx}";
@@ -7,26 +11,6 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
-
-@font-face {
-  font-family: "CabinetGrotesk";
-  src: url("./CabinetGrotesk-Variable.ttf");
-}
-
-@font-face {
-  font-family: "Pencerio";
-  src: url("./Pencerio-Hairline.otf");
-}
-
-@font-face {
-  font-family: "NunitoVariable";
-  src: url("./Nunito-Variable.ttf");
-}
-
-@font-face {
-  font-family: "Comico";
-  src: url("./Comico-Regular.otf");
-}
 
 :root {
   --background: oklch(1 0 0);
@@ -136,10 +120,6 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --font-cabinet-grotesk: CabinetGrotesk;
-  --font-pencerio: Pencerio;
-  --font-nunito-variable: NunitoVariable;
-  --font-comico: Comico;
 }
 
 @layer base {

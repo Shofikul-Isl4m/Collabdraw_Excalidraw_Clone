@@ -1,3 +1,5 @@
+"use client";
+
 import { AppStore, makeStore } from "@/lib/store";
 
 import { useRef } from "react";
