@@ -22,7 +22,7 @@ function SubmitButton() {
     <Button
       type="submit"
       disabled={pending}
-      className={` w-full hover:ring-2 hover:ring-gray-200 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-800 ${
+      className={` w-full hover:ring-2 bg-black text-white hover:bg-black/70 hover:ring-gray-200 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-800 ${
         pending
           ? "cursor-not-allowed border border-gray-300 text-gray-400 outline-none"
           : ""

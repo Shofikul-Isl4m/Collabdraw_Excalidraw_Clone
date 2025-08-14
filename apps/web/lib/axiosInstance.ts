@@ -1,0 +1,38 @@
+import axios from "axios";
+import { error } from "console";
+import { cookies } from "next/headers";
+import { config } from "process";
+
+const axiosInstance = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_HTTP_URl,
+  withCredentials: true,
+});
+
+axiosInstance.interceptors.request.use(
+  async (config) => {
+    let token: string | undefined;
+    if (typeof window === "undefined") {
+      const cookieStore = await cookies();
+      token = cookieStore.get("jwt")?.value;
+    } else {
+      const getCookie = (name: string) => {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}`);
+        if (parts.length == 2) return parts.pop()?.split(";").shift();
+      };
+      token = getCookie("jwt");
+    }
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+export default axiosInstance;
