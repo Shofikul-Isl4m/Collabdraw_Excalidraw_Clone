@@ -2,6 +2,7 @@
 import axiosInstance from "@/lib/axiosInstance";
 import { signInschema, signUpSchema } from "@repo/common/types";
 import { cookies } from "next/headers";
+import { createSafeAction } from "next-safe-action/hooks";
 
 interface FormState {
   message: string;
@@ -22,9 +23,9 @@ export const signupAction = async (
   const username = formData.get("username")?.toString().trim() || "";
   const password = formData.get("password")?.toString().trim() || "";
   const verifypassword =
-    formData.get("verifypassword")?.toString().trim() || "";
+    formData.get("verify-password")?.toString().trim() || "";
 
-  if (password != verifypassword) {
+  if (password !== verifypassword) {
     return {
       message: "password doesnt match",
     };
@@ -114,3 +115,19 @@ export const signinAction = async (
     return { message: "Could not create user." };
   }
 };
+
+export const signoutAction = createSafeAction(async () => {
+  try {
+    const res = await axiosInstance.post("/auth/signout");
+
+    if (res.data.message) {
+      (await cookies()).delete("jwt");
+      return undefined;
+    } else {
+      return undefined;
+    }
+  } catch (error) {
+    console.log(error);
+    return undefined;
+  }
+});

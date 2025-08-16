@@ -44,7 +44,7 @@ export interface User {
   username: string;
 }
 
-export interface Room {
+export interface Rooms {
   id: string;
   title: string;
   joinCode: string;
