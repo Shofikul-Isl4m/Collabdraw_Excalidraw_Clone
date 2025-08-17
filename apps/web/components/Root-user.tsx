@@ -86,7 +86,7 @@ export function NavUser() {
             </div>
           }
 
-          <LogoutButton />
+          {/* <LogoutButton /> */}
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>

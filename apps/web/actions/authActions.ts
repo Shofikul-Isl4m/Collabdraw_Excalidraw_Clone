@@ -2,7 +2,6 @@
 import axiosInstance from "@/lib/axiosInstance";
 import { signInschema, signUpSchema } from "@repo/common/types";
 import { cookies } from "next/headers";
-import { createSafeAction } from "next-safe-action/hooks";
 
 interface FormState {
   message: string;
@@ -116,7 +115,7 @@ export const signinAction = async (
   }
 };
 
-export const signoutAction = createSafeAction(async () => {
+export const signoutAction = async () => {
   try {
     const res = await axiosInstance.post("/auth/signout");
 
@@ -130,4 +129,4 @@ export const signoutAction = createSafeAction(async () => {
     console.log(error);
     return undefined;
   }
-});
+};
