@@ -28,10 +28,16 @@ const items = [
   },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({
+  collapsible,
+  variant,
+}: {
+  collapsible?: "offcanvas" | "icon" | "none";
+  variant?: "sidebar" | "floating" | "inset";
+}) {
   return (
-    <Sidebar variant="inset" className="">
-      <SidebarContent className=" ju flex flex-col">
+    <Sidebar variant={variant} collapsible={collapsible} className="w-62">
+      <SidebarContent className="flex flex-col">
         <SidebarHeader className="flex  flex-row items-center justify-between font-pencerio font-semibold text-2xl max-md:p-4">
           Cdraw
           <div className="max-md:hidden">
@@ -55,7 +61,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarFooter>dsada</SidebarFooter>
+        <SidebarFooter></SidebarFooter>
       </SidebarContent>
     </Sidebar>
   );

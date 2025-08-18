@@ -10,6 +10,8 @@ import { setHomeView, setUser } from "@/features/meetdraw/appSlice";
 import { Button } from "@repo/ui/components/ui/button";
 import { Button as Button2 } from "./StateButton";
 import MeetDrawView from "./MeetDrawView";
+import JoinRoomView from "./JoinRoomView";
+import CreateRoomView from "./CreateRoomView";
 
 export default function MainPage({
   jwtCookie,
@@ -54,14 +56,15 @@ export default function MainPage({
           <div className="flex  gap-2">
             <Button2
               className="w-full md:w-auto bg-black hover:bg-black/70 text-white cursor-pointer"
-              value="join-room"
-              onClick={(value) => dispatch(setHomeView(value))}
+              value="create-room"
+              onClick={() => dispatch(setHomeView("create-room"))}
             >
               Create a Room
             </Button2>
             <Button
               variant="outline"
               className="w-full cursor-pointer  md:w-auto"
+              onClick={() => dispatch(setHomeView("join-room"))}
             >
               Join a Room
             </Button>
@@ -70,6 +73,8 @@ export default function MainPage({
 
         <div className="flex flex-col gap-2 flex-1 min-h-0 p-2 pt-4 rounded-xl">
           {homeView === "meetdraw" && <MeetDrawView />}
+          {homeView === "join-room" && <JoinRoomView />}
+          {homeView === "create-room" && <CreateRoomView />}
         </div>
       </div>
     </div>

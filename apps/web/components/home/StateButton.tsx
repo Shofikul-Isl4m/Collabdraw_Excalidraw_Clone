@@ -22,7 +22,6 @@ export const Button = ({
     <Button2
       {...props}
       className={`${className} hover:ring-2 hover:ring-gray-200 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-800 `}
-      onClick={() => onValueClick?.(value)}
     >
       {children}
     </Button2>

@@ -8,6 +8,36 @@ export interface RoomActionState {
 import axiosInstance from "@/lib/axiosInstance";
 import { Rooms } from "@/types";
 
+export async function createRoomAction(
+  initialState: RoomActionState,
+  formData: FormData
+): Promise<RoomActionState> {
+  const title = formData.get("title") as string;
+  if (!title || title.trim().length === 0) {
+    return {
+      message: "Title is required",
+    };
+  }
+
+  if (title.length > 50) {
+    return {
+      message: "title must be less than 50 characters",
+    };
+  }
+  try {
+    const room = await axiosInstance.post("/room/create", { title });
+    return {
+      message: "room created Successfully",
+      room: room.data.room,
+    };
+  } catch (error: any) {
+    console.log(error);
+    return {
+      message: error.response.data.error,
+    };
+  }
+}
+
 export async function getRooms({ search = "" }: { search?: string }) {
   const queryParams = new URLSearchParams();
   if (search) {
