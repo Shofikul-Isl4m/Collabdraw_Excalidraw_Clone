@@ -74,45 +74,13 @@ export async function joinRoomController(req: Request, res: Response) {
   const { joinCode } = validatedInput.data;
 
   try {
-    const room = await prismaClient.room.findUnique({
-      where: {
-        joinCode,
-      },
-      select: {
-        id: true,
-        title: true,
-        joinCode: true,
-        participants: {
-          select: {
-            id: true,
-          },
-        },
-      },
-    });
-
-    if (!room) {
-      res.status(404).json({
-        Message: " room not found",
-      });
-      return;
-    }
-
-    const alreadyParticipants = room.participants.some((p) => p.id === userId);
-
-    if (alreadyParticipants) {
-      res.status(409).json({
-        message: "we are already participants",
-      });
-      return;
-    }
-
-    const updateRoom = await prismaClient.room.update({
+    const room = await prismaClient.room.update({
       where: {
         joinCode,
       },
       data: {
         participants: {
-          connect: [{ id: userId }],
+          connect: { id: userId },
         },
       },
       select: {
@@ -127,6 +95,7 @@ export async function joinRoomController(req: Request, res: Response) {
 
     res.status(201).json({
       message: "join room succesfull",
+      room: room,
     });
   } catch (error) {
     console.error("error join room", error);

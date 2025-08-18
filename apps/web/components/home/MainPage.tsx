@@ -6,32 +6,42 @@ import { RequestCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { redirect } from "next/navigation";
 import { useEffect } from "react";
 
-import { setHomeView } from "@/features/meetdraw/appSlice";
+import { setHomeView, setUser } from "@/features/meetdraw/appSlice";
 import { Button } from "@repo/ui/components/ui/button";
 import { Button as Button2 } from "./StateButton";
+import MeetDrawView from "./MeetDrawView";
 
-export default function MainPage(
-  {
-    // jwtCookie,
-    // user,
-    // rooms,
-  }: {
-    // jwtCookie: RequestCookie;
-    // user: User;
-    // rooms: Rooms[];
-  }
-) {
+export default function MainPage({
+  jwtCookie,
+  userInfo,
+  rooms,
+}: {
+  jwtCookie: RequestCookie;
+  userInfo: User;
+  rooms: Rooms[];
+}) {
   const userState = useAppSelector((state) => state.app.user);
   const dispatch = useAppDispatch();
 
-  // useEffect(() => {
-  //   if (!jwtCookie || !jwtCookie.value) {
-  //     redirect("/signin");
-  //   }
+  useEffect(() => {
+    if (!jwtCookie || !jwtCookie.value) {
+      redirect("/signin");
+    }
 
-  //   if (userState) {
-  //   }
-  // }, []);
+    if (!userState) {
+      const user = JSON.parse(sessionStorage.getItem("user")!);
+      if (user) {
+        dispatch(setUser(user));
+      } else if (userInfo) {
+        const user = {
+          id: userInfo.id,
+          username: userInfo.username,
+          name: userInfo.name,
+        };
+        dispatch(setUser(user));
+      }
+    }
+  }, [jwtCookie, userState]);
   const homeView = useAppSelector((state) => state.app.homeView);
 
   return (
@@ -56,9 +66,10 @@ export default function MainPage(
               Join a Room
             </Button>
           </div>
-          <div className="flex flex-col gap-2 flex-1 min-h-0 p-2 pt-4 rounded-xl">
-            {homeView === "meetdraw" && <MeetDrawView />}
-          </div>
+        </div>
+
+        <div className="flex flex-col gap-2 flex-1 min-h-0 p-2 pt-4 rounded-xl">
+          {homeView === "meetdraw" && <MeetDrawView />}
         </div>
       </div>
     </div>

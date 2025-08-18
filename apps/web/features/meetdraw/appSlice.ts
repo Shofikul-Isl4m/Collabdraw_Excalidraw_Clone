@@ -1,11 +1,11 @@
-import { Room, User } from "@/types";
+import { Rooms, User } from "@/types";
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState: {
   user: User | null;
-  rooms: Room | null;
+  rooms: Rooms | null;
   homeView: "meetdraw" | "create-room" | "join-room" | "chat";
-  activeRoom: Room | null;
+  activeRoom: Rooms | null;
 } = {
   user: null,
   rooms: null,

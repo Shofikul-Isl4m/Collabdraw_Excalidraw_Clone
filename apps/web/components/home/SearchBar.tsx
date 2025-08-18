@@ -1,10 +1,14 @@
+"use client";
+
 import useDebounce from "@/lib/hooks/useDebounce";
 import { Input } from "@repo/ui/components/ui/input";
-import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/router";
+import { LoaderCircle, Search } from "lucide-react";
+
+import { useRouter, useSearchParams } from "next/navigation";
+
 import { useEffect, useState } from "react";
 
-const SearchBar = () => {
+const SearchBar = ({ search }: { search: string }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [value, setValue] = useState("");
@@ -17,18 +21,32 @@ const SearchBar = () => {
     } else {
       param.delete("search");
     }
-    router.push(`/dashboard?${param.toString()}`);
+    router.push(`/home?${param.toString()}`);
   }, [debounceValue, searchParams, router]);
 
   return (
-    <div className="w-full lg:w-96">
+    <div className=" relative w-full  lg:w-96">
       <Input
         type="search"
         placeholder="search..."
-        className="peer ps-9 pe-9 w-full"
+        className="peer ps-9 pe-9 w-full py-2 "
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
+
+      <div className="text-muted-foreground/80 pointer-events-none absolute   inset-y-0 flex items-center justify-center peer-disabled:opacity-50">
+        {isLoading ? (
+          <LoaderCircle
+            strokeWidth={2}
+            className="animate-spin"
+            aria-hidden="true"
+            role="presentation"
+            size={16}
+          />
+        ) : (
+          <Search size={16} strokeWidth={2} aria-hidden="true" />
+        )}
+      </div>
     </div>
   );
 };

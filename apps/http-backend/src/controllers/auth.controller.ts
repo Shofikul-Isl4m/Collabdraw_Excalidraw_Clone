@@ -36,6 +36,7 @@ export async function signUpController(req: Request, res: Response) {
     };
 
     if (!process.env.JWT_SECRET) {
+      console.log(process.env.JWT_SECRET);
       throw new Error("JWT SECRET IS NOT STRING IN SIGNUPCONTROLLER");
     }
 

@@ -5,15 +5,20 @@ import { redirect } from "next/navigation";
 
 const page = async () => {
   const jwtCookie = (await cookies()).get("jwt");
-  // if (!jwtCookie) {
-  //   redirect("/signin");
-  // }
+  if (!jwtCookie) {
+    redirect("/signin");
+  }
 
-  // const { data: user } = await axiosInstance.get("/auth/info");
-  // const { data: rooms } = await axiosInstance.get("/room/all");
+  const { data: user } = await axiosInstance.get("/auth/info");
+  const { data: rooms } = await axiosInstance.get("/room/all");
   return (
     <>
-      <MainPage />;
+      <MainPage
+        jwtCookie={jwtCookie}
+        rooms={rooms.rooms}
+        userInfo={user.user}
+      />
+      ;
     </>
   );
 };
