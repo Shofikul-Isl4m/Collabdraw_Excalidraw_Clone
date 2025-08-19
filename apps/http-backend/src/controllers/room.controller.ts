@@ -44,6 +44,7 @@ export async function createRoomController(req: Request, res: Response) {
 
     res.status(201).json({
       message: "room created successful",
+      room,
     });
   } catch (error) {
     console.error("error room creation ", error);

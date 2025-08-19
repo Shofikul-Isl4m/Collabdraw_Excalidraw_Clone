@@ -35,6 +35,12 @@ const MeetDrawView = () => {
           <GiSolarSystem className="text-2xl " />
         </div>
       )}
+
+      <div className="grid grid-cols-3 gap-4 auto-rows-min flex-1 min-h-0 overflow-y-auto py-1 [&::-webkit-scrollbar]:hidden">
+        {rooms.map((room) => (
+          <MeetDrawCard key={room.id} room={room} />
+        ))}
+      </div>
     </>
   );
 };

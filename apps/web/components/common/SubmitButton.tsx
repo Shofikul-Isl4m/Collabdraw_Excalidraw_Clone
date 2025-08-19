@@ -25,7 +25,7 @@ export const SubmitButton = ({
     <Button
       type="submit"
       {...props}
-      className={`${className} hover:ring-2 hover:ring-gray-200 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-800 `}
+      className={`${className} hover:ring-2 hover:ring-gray-200 bg-black text-white cursor-pointer hover:bg-black/80 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-800 `}
     >
       <div>{pending ? loadingText : children}</div>
     </Button>

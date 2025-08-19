@@ -28,8 +28,8 @@ const CreateRoomView = () => {
 
   return (
     <>
-      <div className="flex w-full items-center justify-between">
-        <h3 className="text-xl font-medium">Create a new Meetdraw</h3>
+      <div className="flex w-full items-center justify-between p-6 border-gray-600 ">
+        <h3 className="text-2xl font-medium">Create Draw</h3>
         <button
           onClick={() => dispatch(setHomeView("meetdraws"))}
           className="cursor-pointer"
@@ -45,7 +45,8 @@ const CreateRoomView = () => {
               name="title"
               type="text"
               required={true}
-              placeholder="Enter a name for your Meetdraw"
+              placeholder="Enter a name for your Draw"
+              className="py-2 px-4"
             />
             <SubmitButton pending={isPending} loadingText="Creating...">
               {isPending ? "Creating..." : "Create"}

@@ -32,8 +32,8 @@ const JoinRoomView = () => {
 
   return (
     <>
-      <div className="flex w-full items-center justify-between">
-        <div></div>
+      <div className="flex w-full items-center justify-between p-6">
+        <div className="font-medium text-2xl">Join Draw </div>
         <button
           onClick={() => dispatch(setHomeView("meetdraws"))}
           className="cursor-pointer"
@@ -90,7 +90,7 @@ const JoinRoomView = () => {
               </InputOTP>
               <Input type="hidden" name="joinCode" value={code} />
               <SubmitButton
-                className="w-full mt-5  rounded-2xl cursor-pointer text-xl bg-black text-white"
+                className="w-full mt-5   cursor-pointer text-xl bg-black text-white"
                 pending={isPending}
                 loadingText="Joining..."
               >
