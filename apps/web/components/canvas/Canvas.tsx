@@ -1,5 +1,7 @@
 "use client";
 
+import { useWebSocket } from "@/lib/hooks/websocket";
+import { Message } from "@/types";
 import { Button } from "@repo/ui/components/ui/button";
 import { TooltipProvider } from "@repo/ui/components/ui/tooltip";
 import { ChartBar } from "lucide-react";
@@ -11,6 +13,10 @@ import { PiChatCircle } from "react-icons/pi";
 const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const unreadMessagesRef = useRef<boolean>(false);
   const [showChatBar, setShowChatBar] = useState(false);
+  const [chatMessage, setChatMessage] = useState<Message[]>([]);
+  const { isError, isLoading, socket } = useWebSocket(
+    `${process.env.NEXT_PUBLIC_WS_URL}?token${token}`
+  );
   return (
     <TooltipProvider>
       <div className="w-screen h-screen relative">
@@ -41,7 +47,17 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
             </Button>
           </div>
         </div>
-        {showChatBar && <ChatBar closeChat={() => setShowChatBar(false)} />}
+        {showChatBar && (
+          <ChatBar
+            closeChat={() => setShowChatBar(false)}
+            message={chatMessage}
+            user={user}
+            onSendMessage={handleSendMessages}
+            onLoadMoreMessages={handleLoadMoreMessages}
+            isLoadingMore={isLoadMoreMessages}
+            chatMessageInputRef={chatMessageInputRef}
+          />
+        )}
       </div>
     </TooltipProvider>
   );
