@@ -1,22 +1,71 @@
 "use client";
 
 import { useWebSocket } from "@/lib/hooks/websocket";
-import { Message } from "@/types";
+import { Draw, Message } from "@/types";
 import { Button } from "@repo/ui/components/ui/button";
 import { TooltipProvider } from "@repo/ui/components/ui/tooltip";
 import { ChartBar } from "lucide-react";
 import { redirect } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AiOutlineHome } from "react-icons/ai";
 import { PiChatCircle } from "react-icons/pi";
+import ChatBar from "./ChatBar";
+import { useAppSelector } from "@/lib/hooks/redux";
 
 const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const unreadMessagesRef = useRef<boolean>(false);
-  const [showChatBar, setShowChatBar] = useState(false);
+  const [showChatBar, setShowChatBar] = useState(true);
   const [chatMessage, setChatMessage] = useState<Message[]>([]);
+  const chatMessageInputRef = useRef<HTMLTextAreaElement>(null);
+  const [serverReady, setServerReady] = useState(false);
+  const [isLoadingMoreMessages, setIsLoadingMoreMessages] =
+    useState<boolean>(false);
+  const diagrams = useRef<Draw[]>([]);
+  const user = useAppSelector((state) => state.app.user);
   const { isError, isLoading, socket } = useWebSocket(
     `${process.env.NEXT_PUBLIC_WS_URL}?token${token}`
   );
+
+  useEffect(() => {
+    if (socket && user && !isError && !isLoading) {
+      if (serverReady) {
+        const connectMessage = {
+          type: "connect_room",
+          roomId: roomId,
+          userId: user.id,
+        };
+        socket.send(JSON.stringify(connectMessage));
+      }
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        switch (data.type) {
+          case "connection_ready":
+            setServerReady(true);
+            break;
+          case "error_message":
+            alert("please try again");
+            console.log(data.content, "try again");
+            break;
+          case "chat_messages":
+            const message = JSON.parse(data.content);
+            if (message.id !== user.id) {
+              unreadMessagesRef.current = true;
+            }
+            setChatMessage((prev) => [...prev, message]);
+            break;
+          case "draw":
+            if (data.userId === user.id) {
+              return;
+            }
+            const action = JSON.parse(data.content);
+            diagrams.current = performAction(action, diagrams.current);
+        }
+      };
+    }
+  }, []);
+
   return (
     <TooltipProvider>
       <div className="w-screen h-screen relative">
@@ -50,11 +99,11 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
         {showChatBar && (
           <ChatBar
             closeChat={() => setShowChatBar(false)}
-            message={chatMessage}
-            user={user}
+            messages={chatMessage}
+            user={user!}
             onSendMessage={handleSendMessages}
             onLoadMoreMessages={handleLoadMoreMessages}
-            isLoadingMore={isLoadMoreMessages}
+            isLoadingMore={isLoadingMoreMessages}
             chatMessageInputRef={chatMessageInputRef}
           />
         )}
