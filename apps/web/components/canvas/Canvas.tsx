@@ -4,13 +4,15 @@ import { useWebSocket } from "@/lib/hooks/websocket";
 import { Draw, Message } from "@/types";
 import { Button } from "@repo/ui/components/ui/button";
 import { TooltipProvider } from "@repo/ui/components/ui/tooltip";
-import { ChartBar } from "lucide-react";
+
 import { redirect } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AiOutlineHome } from "react-icons/ai";
 import { PiChatCircle } from "react-icons/pi";
 import ChatBar from "./ChatBar";
 import { useAppSelector } from "@/lib/hooks/redux";
+import { performAction } from "@/lib/canvas/actionRelatedFunctions";
+import { fetchAllChatMessages } from "@/actions/chatAction";
 
 const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const unreadMessagesRef = useRef<boolean>(false);
@@ -20,6 +22,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const [serverReady, setServerReady] = useState(false);
   const [isLoadingMoreMessages, setIsLoadingMoreMessages] =
     useState<boolean>(false);
+  const lastSrNoRef = useRef<number>(0);
   const diagrams = useRef<Draw[]>([]);
   const user = useAppSelector((state) => state.app.user);
   const { isError, isLoading, socket } = useWebSocket(
@@ -64,7 +67,72 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
         }
       };
     }
-  }, []);
+
+    return () => {
+      if (user && socket && serverReady) {
+        const disconnectMessage = {
+          type: "disconnect_message",
+          roomId,
+          userId: user.id,
+        };
+
+        socket.send(JSON.stringify(disconnectMessage));
+      }
+    };
+  }, [user, socket, isLoading, isError, roomId, serverReady]);
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const messages = await fetchAllChatMessages(roomId, undefined);
+        setChatMessage(messages);
+        if (messages.length > 0) {
+          lastSrNoRef.current = messages[0]?.serialNumber!;
+        }
+      } catch (e) {
+        console.error("failed to fetch messages", e);
+      }
+    };
+    fetchMessages();
+  }, [roomId]);
+
+  const handleLoadMoreMessages = async (): Promise<Message[]> => {
+    if (!lastSrNoRef.current || isLoadingMoreMessages) return [];
+
+    setIsLoadingMoreMessages(true);
+
+    try {
+      const messages = await fetchAllChatMessages(roomId, lastSrNoRef.current);
+      setChatMessage((prev) => [...messages, ...prev]);
+      if (messages.length > 0) {
+        lastSrNoRef.current = messages[0]?.serialNumber!;
+      } else {
+        lastSrNoRef.current = 0;
+      }
+
+      return messages;
+    } catch (e) {
+      return [];
+    } finally {
+      setIsLoadingMoreMessages(false);
+    }
+  };
+
+  const handleSendMessages = (content: string) => {
+    if (!socket) {
+      alert("connection failed please try again");
+      return;
+    }
+    if (socket && serverReady && content.trim()) {
+      const chatMessage = {
+        type: "chat_message",
+        userId: user?.id,
+        roomId,
+        content: content.trim(),
+      };
+      socket.send(JSON.stringify(chatMessage));
+    }
+  };
 
   return (
     <TooltipProvider>
