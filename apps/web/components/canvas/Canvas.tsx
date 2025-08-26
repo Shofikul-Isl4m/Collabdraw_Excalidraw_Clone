@@ -8,7 +8,17 @@ import { TooltipProvider } from "@repo/ui/components/ui/tooltip";
 import { redirect } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AiOutlineHome } from "react-icons/ai";
-import { PiChatCircle } from "react-icons/pi";
+import {
+  PiChatCircle,
+  PiCircle,
+  PiCircleFill,
+  PiCursor,
+  PiCursorFill,
+  PiDiamond,
+  PiDiamondFill,
+  PiSquare,
+  PiSquareFill,
+} from "react-icons/pi";
 import ChatBar from "./ChatBar";
 import { useAppSelector } from "@/lib/hooks/redux";
 import { performAction } from "@/lib/canvas/actionRelatedFunctions";
@@ -25,6 +35,12 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const lastSrNoRef = useRef<number>(0);
   const diagrams = useRef<Draw[]>([]);
   const user = useAppSelector((state) => state.app.user);
+  const [activeAction, setActiveAction] = useState<
+    "select" | "draw" | "move" | "erase" | "resize" | "pan" | "zoom" | "edit"
+  >("select");
+  const [activeShape, setActiveShape] = useState<
+    "rectangle" | "diamond" | "circle" | "line" | "arrow" | "text" | "freeHand"
+  >("rectangle");
   const { isError, isLoading, socket } = useWebSocket(
     `${process.env.NEXT_PUBLIC_WS_URL}?token${token}`
   );
@@ -159,7 +175,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
             >
               <PiChatCircle size={18} className="text-white" />
               {unreadMessagesRef.current && (
-                <div className="absolute top-0 right-0 w-2 h-2 bg-green-500 rounded-full" />
+                <div className="absolute top-0 right-0 w-2 h-2 bg-purple-500 rounded-full" />
               )}
             </Button>
           </div>
@@ -175,6 +191,165 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
             chatMessageInputRef={chatMessageInputRef}
           />
         )}
+
+        <div className="fixed top-3 left-1/2 z-2 w-fit h-fit bg-black rounded-lg transform -translate-x-1/2">
+          <div className="bg-purple-500/25 px-1.5 py-1 flex gap-1.5 items-center">
+            <Button
+              size="icon"
+              className={`bg-transparent relative p-2 ${activeAction === "select" || activeAction === "move" || activeAction === "resize" ? "bg-purple-600" : "hover:bg-purple-600/20"}`}
+              onClick={() => {
+                setActiveAction("select");
+                if (activeDraw.current.shape === "text") {
+                  activeDraw.current = null;
+                  shapeSelectionBox.current = null;
+                }
+              }}
+            >
+              {activeAction === "select" ||
+              activeAction === "move" ||
+              activeAction === "resize" ? (
+                <PiCursorFill className="text-white" size={18} />
+              ) : (
+                <PiCursor className="text-white" size={18} />
+              )}
+              <p className="absolute right-1 bottom-1 text-white text-[8px] font-mono">
+                1
+              </p>
+            </Button>
+            <Button
+              size="icon"
+              className={`p-2 bg-transparent relative ${activeAction === "draw" && activeShape === "rectangle" ? "bg-purple-600" : "hover:bg-purple-600/20"}`}
+              onClick={() => {
+                setActiveAction("draw");
+                setActiveShape("rectangle");
+                if (activeDraw.current.shape === "text") {
+                  activedraw.current = null;
+                  shapeSelectionBox.current = null;
+                }
+              }}
+            >
+              {activeAction === "draw" && activeShape === "rectangle" ? (
+                <PiSquareFill size={18} className="text-white" />
+              ) : (
+                <PiSquare size={18} className="text-white" />
+              )}
+
+              <p className="font-mono text-[8px]  absolute bottom-1 right-1 text-white  ">
+                2
+              </p>
+            </Button>
+            <Button
+              size="icon"
+              className={`p-2 bg-transparent relative ${activeAction === "draw" && activeShape === "diamond" ? "bg-purple-600" : "hover:bg-purple-600/20"}`}
+              onClick={() => {
+                setActiveAction("draw");
+                setActiveShape("diamond");
+                if (activeDraw.current.shape === "text") {
+                  activedraw.current = null;
+                  shapeSelectionBox.current = null;
+                }
+              }}
+            >
+              {activeAction === "draw" && activeShape === "diamond" ? (
+                <PiDiamondFill size={18} className="text-white" />
+              ) : (
+                <PiDiamond size={18} className="text-white" />
+              )}
+
+              <p className="font-mono text-[8px]  absolute bottom-1 right-1 text-white  ">
+                3
+              </p>
+            </Button>
+            <Button
+              size="icon"
+              className={`p-2 bg-transparent relative ${activeAction === "draw" && activeShape === "rectangle" ? "bg-purple-600" : "hover:bg-purple-600/20"}`}
+              onClick={() => {
+                setActiveAction("draw");
+                setActiveShape("rectangle");
+                if (activeDraw.current.shape === "text") {
+                  activedraw.current = null;
+                  shapeSelectionBox.current = null;
+                }
+              }}
+            >
+              {activeAction === "draw" && activeShape === "" ? (
+                <PiCircleFill size={18} className="text-white" />
+              ) : (
+                <PiCircle size={18} className="text-white" />
+              )}
+
+              <p className="font-mono text-[8px]  absolute bottom-1 right-1 text-white  ">
+                4
+              </p>
+            </Button>
+            <Button
+              size="icon"
+              className={`p-2 bg-transparent relative ${activeAction === "draw" && activeShape === "rectangle" ? "bg-purple-600" : "hover:bg-purple-600/20"}`}
+              onClick={() => {
+                setActiveAction("draw");
+                setActiveShape("rectangle");
+                if (activeDraw.current.shape === "text") {
+                  activedraw.current = null;
+                  shapeSelectionBox.current = null;
+                }
+              }}
+            >
+              {activeAction === "draw" && activeShape === "rectangle" ? (
+                <PiSquareFill size={18} className="text-white" />
+              ) : (
+                <PiSquare size={18} className="text-white" />
+              )}
+
+              <p className="font-mono text-[8px]  absolute bottom-1 right-1 text-white  ">
+                2
+              </p>
+            </Button>
+            <Button
+              size="icon"
+              className={`p-2 bg-transparent relative ${activeAction === "draw" && activeShape === "rectangle" ? "bg-purple-600" : "hover:bg-purple-600/20"}`}
+              onClick={() => {
+                setActiveAction("draw");
+                setActiveShape("rectangle");
+                if (activeDraw.current.shape === "text") {
+                  activedraw.current = null;
+                  shapeSelectionBox.current = null;
+                }
+              }}
+            >
+              {activeAction === "draw" && activeShape === "rectangle" ? (
+                <PiSquareFill size={18} className="text-white" />
+              ) : (
+                <PiSquare size={18} className="text-white" />
+              )}
+
+              <p className="font-mono text-[8px]  absolute bottom-1 right-1 text-white  ">
+                2
+              </p>
+            </Button>
+            <Button
+              size="icon"
+              className={`p-2 bg-transparent relative ${activeAction === "draw" && activeShape === "rectangle" ? "bg-purple-600" : "hover:bg-purple-600/20"}`}
+              onClick={() => {
+                setActiveAction("draw");
+                setActiveShape("rectangle");
+                if (activeDraw.current.shape === "text") {
+                  activedraw.current = null;
+                  shapeSelectionBox.current = null;
+                }
+              }}
+            >
+              {activeAction === "draw" && activeShape === "rectangle" ? (
+                <PiSquareFill size={18} className="text-white" />
+              ) : (
+                <PiSquare size={18} className="text-white" />
+              )}
+
+              <p className="font-mono text-[8px]  absolute bottom-1 right-1 text-white  ">
+                2
+              </p>
+            </Button>
+          </div>
+        </div>
       </div>
     </TooltipProvider>
   );
