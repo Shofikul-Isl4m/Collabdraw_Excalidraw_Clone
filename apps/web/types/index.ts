@@ -11,7 +11,7 @@ export interface Draw {
 
   strokeStyle: string;
   fillStyle: string;
-  linewidth: string;
+  linewidth: number;
   font: string;
   fontSize: string;
   startX?: number;

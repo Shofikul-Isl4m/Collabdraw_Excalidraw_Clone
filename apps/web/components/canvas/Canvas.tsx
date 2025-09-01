@@ -33,7 +33,8 @@ import { fetchAllChatMessages } from "@/actions/chatAction";
 import { LiaHandPaper, LiaHandRock } from "react-icons/lia";
 import { BsFonts } from "react-icons/bs";
 import { TbZoom } from "react-icons/tb";
-import { isDragging } from "framer-motion";
+import { current } from "@reduxjs/toolkit";
+import { renderDraws } from "@/lib/canvas/drawFunction";
 
 const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const unreadMessagesRef = useRef<boolean>(false);
@@ -41,6 +42,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const [chatMessage, setChatMessage] = useState<Message[]>([]);
   const chatMessageInputRef = useRef<HTMLTextAreaElement>(null);
   const [serverReady, setServerReady] = useState(false);
+  const activeDraw = useRef<Draw>(null);
   const [isLoadingMoreMessages, setIsLoadingMoreMessages] =
     useState<boolean>(false);
   const lastSrNoRef = useRef<number>(0);
@@ -56,14 +58,15 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const [selectedShape, setSelectedShape] =
     useState<Draw["shape"]>("rectangle");
   const [isClient, setIsClient] = useState<boolean>(false);
-  const [activeStrokeStyle, setActiveStrokeStyle] = useState("");
-  const [activeFillStyle, setActiveFillStyle] = useState("");
-  const [activeLineWidth, setActiveLineWidth] = useState("");
+  const [activeStrokeStyle, setActiveStrokeStyle] = useState("#eeeeee");
+  const [activeFillStyle, setActiveFillStyle] = useState("#eeeeee00");
+  const [activeLineWidth, setActiveLineWidth] = useState(0);
   const [activeFont, setActiveFont] = useState<string>("Arial");
-  const [activeFontSize, setActiveFontSize] = useState<string>(20);
+  const [activeFontSize, setActiveFontSize] = useState<string>("20");
   const { isError, isLoading, socket } = useWebSocket(
     `${process.env.NEXT_PUBLIC_WS_URL}?token${token}`
   );
+  const selectedDraw = useRef<Draw>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const activeShapeRef = useRef(activeShape);
   const selectedShapeRef = useRef(selectedShape);
@@ -74,6 +77,8 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const activeLineWidthRef = useRef(activeLineWidth);
   const activeFontSizeRef = useRef(activeFontSize);
   const activeFontRef = useRef(activeFont);
+  const currentX = useRef<number>(null);
+  const currentY = useRef<number>(null);
 
   useEffect(() => {
     activeShapeRef.current = activeShape;
@@ -93,10 +98,44 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
           if (isDraggingRef.current) {
             canvasRef.current.style.cursor = "grabbing";
           } else {
-            canvasRef.current.style.cursor = "grab"
+            canvasRef.current.style.cursor = "grab";
           }
           break;
-        case 
+        case "select":
+          canvasRef.current.style = "default";
+          break;
+        case "move":
+          canvasRef.current.style = "move";
+          break;
+        case "resize":
+          canvasRef.current.style = "default";
+          break;
+        case "edit":
+          canvasRef.current.style = "text";
+          break;
+        case "erase":
+          canvasRef.current.style = "cell";
+          break;
+        case "draw":
+          canvasRef.current.style = "crosshair";
+          break;
+        case "zoom":
+          canvasRef.current.style = "zoom-in";
+          break;
+      }
+
+      if (selectedDraw.current) {
+        selectedDraw.current.strokeStyle = activeStrokeStyleRef.current;
+        selectedDraw.current.fillStyle = activeFillStyleRef.current;
+        selectedDraw.current.linewidth = activeLineWidthRef.current;
+        selectedDraw.current.font = activeFontRef.current;
+        if (
+          selectedDraw.current.fontSize === "20" ||
+          selectedDraw.current.fontSize === "40" ||
+          selectedDraw.current.fontSize === "60"
+        ) {
+          selectedDraw.current.fontSize = activeFontSizeRef.current;
+        }
       }
     }
   }, [
@@ -113,6 +152,88 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const changeActiveStrokeStyle = (color: string) => {
+    setActiveStrokeStyle(color);
+  };
+  const changeActiveFillStyle = (color: string) => {
+    setActiveFillStyle(color);
+  };
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const canvasCurrent = canvasRef.current;
+    const ctx = canvasCurrent.getContext("2d");
+
+    setInterval(() => {
+      renderDraws(ctx!, diagrams.current, activeDraw.current!, canvasCurrent);
+    }, 15);
+
+    const handleMouseDown = (event: MouseEvent) => {
+      setIsDragging(true);
+
+      const currentActiveShape = activeShapeRef.current;
+      const isLineOrArrow =
+        currentActiveShape === "line" || currentActiveShape === "arrow";
+      if (activeActionRef.current === "draw")
+        activeDraw.current = {
+          id: Date.now().toString() + "-" + user?.id,
+          shape: activeShapeRef.current,
+          strokeStyle: activeStrokeStyleRef.current,
+          fillStyle: activeFillStyleRef.current,
+          linewidth: activeLineWidthRef.current,
+          points: isLineOrArrow ? [{ x: event.offsetX, y: event.offsetY a}] : [],
+          startX: event.offsetX,
+          startY: event.offsetY,
+          text: "",
+          font: activeFontRef.current,
+          fontSize: activeFontSizeRef.current,
+        };
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!activeDraw.current) return;
+      currentX.current = event.offsetX;
+        currentY.current = event.offsetY;
+       
+       if (activeActionRef.current === "draw") {
+         if (!activeActionRef.current) return;
+          
+          if (activeShapeRef.current !== "text") {
+        activeDraw.current!.endX = currentX.current,
+          activeDraw.current!.endY = currentY.current;
+      
+            if (activeShapeRef.current === "line" || activeShapeRef.current === "arrow") {
+                   activeDraw.current.points = [
+                     { x: (activeDraw.current.startX! + activeDraw.current.endX!)/2 ,y : (activeDraw.current.startY! + activeDraw.current.endY)/2 }
+
+              ]
+          
+          
+        }
+      }
+         
+         
+       }
+
+      
+     
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      setIsDragging(false);
+      ((activeDraw.current!.endX = event.offsetX),
+        (activeDraw.current!.endY = event.offsetY),
+        diagrams.current.push(activeDraw.current!));
+
+      activeDraw.current = null;
+    };
+
+    canvasCurrent.addEventListener("mousedown", handleMouseDown);
+    canvasCurrent.addEventListener("mousemove", handleMouseMove);
+    canvasCurrent.addEventListener("mouseup", handleMouseUp);
+  }, []);
+
   useEffect(() => {
     if (socket && user && !isError && !isLoading) {
       if (serverReady) {
