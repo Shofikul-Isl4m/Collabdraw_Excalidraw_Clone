@@ -24,10 +24,19 @@ export const renderDraws = (
     switch (diagram.shape) {
       case "rectangle":
         renderRectangle(ctx, diagram);
+        break;
       case "diamond":
         renderDiamond(ctx, diagram);
+        break;
       case "circle":
         renderCircle(ctx, diagram);
+        break;
+      case "line":
+        renderLine(ctx, diagram);
+        break;
+      case "arrow":
+        renderArrow(ctx, diagram);
+        break;
     }
   });
 
@@ -35,10 +44,19 @@ export const renderDraws = (
     switch (activeDraw.shape) {
       case "rectangle":
         renderRectangle(ctx, activeDraw);
+        break;
       case "diamond":
         renderDiamond(ctx, activeDraw);
+        break;
       case "circle":
         renderCircle(ctx, activeDraw);
+        break;
+      case "line":
+        renderLine(ctx, activeDraw);
+        break;
+      case "arrow":
+        renderArrow(ctx, activeDraw);
+        break;
     }
   }
 
@@ -146,6 +164,54 @@ export const renderDraws = (
     ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
     ctx.stroke();
     ctx.fill();
+    ctx.closePath();
+  }
+
+  function renderLine(ctx: CanvasRenderingContext2D, diagram: Draw) {
+    ctx.beginPath();
+    ctx.moveTo(diagram.startX!, diagram.startY!);
+
+    const p0 = { x: diagram.startX, y: diagram.startY };
+    const p2 = { x: diagram.endX, y: diagram.endY };
+    const p1 = diagram.points[0];
+    const controlPointX = 2 * p1!.x - 0.5 * p0!.x! - 0.5 * p2!.x!;
+    const controlPointY = 2 * p1!.y - 0.5 * p0!.y! - 0.5 * p2!.y!;
+    ctx.quadraticCurveTo(controlPointX, controlPointY, p2!.x!, p2!.y!);
+    ctx.stroke();
+    ctx.closePath();
+  }
+
+  function renderArrow(ctx: CanvasRenderingContext2D, diagram: Draw) {
+    ctx.beginPath();
+    ctx.moveTo(diagram.startX!, diagram.startY!);
+    const p0 = { x: diagram.startX, y: diagram.startY };
+    const p1 = diagram.points[0];
+    const p2 = { x: diagram.endX, y: diagram.endY };
+    const controlPointX = 2 * p1!.x - 0.5 * p0.x! - 0.5 * p2.x!;
+    const controlPointY = 2 * p1!.y - 0.5 * p0.y! - 0.5 * p2.y!;
+    ctx.quadraticCurveTo(controlPointX, controlPointY, p2.x!, p2.y!);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(diagram.startX!, diagram.startY!);
+
+    const tangentDx = p2.x! - controlPointX;
+    const tangentDy = p2.y! - controlPointY;
+    const angle = Math.atan2(tangentDy, tangentDx);
+    const lineLength = Math.sqrt(
+      Math.pow(p2.x! - p0.x!, 2) + Math.pow(p2.y! - p0.x!, 2)
+    );
+    const headLength =
+      Math.min(lineLength * 0.2, 20) + (diagram.linewidth ?? 1) * 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(p2.x!, p2.y!);
+    ctx.lineTo(
+      p2.x! - headLength * Math.cos(angle - Math.PI / 10),
+      p2.y! - headLength * Math.sin(angle - Math.PI / 10)
+    );
+    ctx.stroke();
+    ctx.restore();
     ctx.closePath();
   }
 };

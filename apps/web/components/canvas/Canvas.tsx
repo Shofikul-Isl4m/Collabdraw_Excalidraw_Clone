@@ -35,6 +35,7 @@ import { BsFonts } from "react-icons/bs";
 import { TbZoom } from "react-icons/tb";
 import { current } from "@reduxjs/toolkit";
 import { renderDraws } from "@/lib/canvas/drawFunction";
+import { Lectern } from "lucide-react";
 
 const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const unreadMessagesRef = useRef<boolean>(false);
@@ -182,7 +183,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
           strokeStyle: activeStrokeStyleRef.current,
           fillStyle: activeFillStyleRef.current,
           linewidth: activeLineWidthRef.current,
-          points: isLineOrArrow ? [{ x: event.offsetX, y: event.offsetY a}] : [],
+          points: isLineOrArrow ? [{ x: event.offsetX, y: event.offsetY }] : [],
           startX: event.offsetX,
           startY: event.offsetY,
           text: "",
@@ -194,39 +195,67 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
     const handleMouseMove = (event: MouseEvent) => {
       if (!activeDraw.current) return;
       currentX.current = event.offsetX;
-        currentY.current = event.offsetY;
-       
-       if (activeActionRef.current === "draw") {
-         if (!activeActionRef.current) return;
-          
-          if (activeShapeRef.current !== "text") {
-        activeDraw.current!.endX = currentX.current,
-          activeDraw.current!.endY = currentY.current;
-      
-            if (activeShapeRef.current === "line" || activeShapeRef.current === "arrow") {
-                   activeDraw.current.points = [
-                     { x: (activeDraw.current.startX! + activeDraw.current.endX!)/2 ,y : (activeDraw.current.startY! + activeDraw.current.endY)/2 }
+      currentY.current = event.offsetY;
 
-              ]
-          
-          
+      if (activeActionRef.current === "draw") {
+        if (!activeActionRef.current) return;
+
+        if (activeShapeRef.current !== "text") {
+          ((activeDraw.current!.endX = currentX.current),
+            (activeDraw.current!.endY = currentY.current));
+
+          if (
+            activeShapeRef.current === "line" ||
+            activeShapeRef.current === "arrow"
+          ) {
+            activeDraw.current.points = [
+              {
+                x: (activeDraw.current.startX! + activeDraw.current.endX!) / 2,
+                y: (activeDraw.current.startY! + activeDraw.current.endY) / 2,
+              },
+            ];
+          }
         }
       }
-         
-         
-       }
-
-      
-     
     };
 
     const handleMouseUp = (event: MouseEvent) => {
       setIsDragging(false);
-      ((activeDraw.current!.endX = event.offsetX),
-        (activeDraw.current!.endY = event.offsetY),
-        diagrams.current.push(activeDraw.current!));
 
-      activeDraw.current = null;
+      if (activeShapeRef.current !== "freeHand") {
+        activeDraw.current!.endX = event.offsetX;
+        activeDraw.current!.endY = event.offsetY;
+
+        if (
+          activeShapeRef.current === "rectangle" ||
+          activeShapeRef.current === "diamond" ||
+          activeShapeRef.current === "circle"
+        ) {
+          if (activeDraw.current?.endX! < activeDraw.current?.startX!) {
+            let a = activeDraw.current!.endX;
+            activeDraw.current!.startX = a;
+            activeDraw.current!.endX = activeDraw.current!.startX;
+          }
+          if (activeDraw.current?.endY! < activeDraw.current?.startY!) {
+            let a = activeDraw.current!.endY;
+            activeDraw.current!.startY = a;
+            activeDraw.current!.endY = activeDraw.current!.startY;
+          }
+        } else if (
+          activeShapeRef.current === "line" ||
+          activeShapeRef.current === "arrow"
+        ) {
+          // activeDraw.current!.points = [
+          //   {
+          //     x: (activeDraw.current?.startX! + activeDraw.current?.endX!) / 2,
+          //     y: (activeDraw.current?.startY! + activeDraw.current?.endY!) / 2,
+          //   },
+          // ];
+        }
+
+        diagrams.current.push(activeDraw.current!);
+        activeDraw.current = null;
+      }
     };
 
     canvasCurrent.addEventListener("mousedown", handleMouseDown);
