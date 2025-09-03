@@ -174,6 +174,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
       setIsDragging(true);
 
       const currentActiveShape = activeShapeRef.current;
+      const isDrawing = currentActiveShape === "freeHand";
       const isLineOrArrow =
         currentActiveShape === "line" || currentActiveShape === "arrow";
       if (activeActionRef.current === "draw")
@@ -183,9 +184,12 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
           strokeStyle: activeStrokeStyleRef.current,
           fillStyle: activeFillStyleRef.current,
           linewidth: activeLineWidthRef.current,
-          points: isLineOrArrow ? [{ x: event.offsetX, y: event.offsetY }] : [],
-          startX: event.offsetX,
-          startY: event.offsetY,
+          points:
+            isDrawing || isLineOrArrow
+              ? [{ x: event.offsetX, y: event.offsetY }]
+              : [],
+          startX: isDrawing ? undefined : event.offsetX,
+          startY: isDrawing ? undefined : event.offsetY,
           text: "",
           font: activeFontRef.current,
           fontSize: activeFontSizeRef.current,
@@ -199,8 +203,12 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
 
       if (activeActionRef.current === "draw") {
         if (!activeActionRef.current) return;
-
-        if (activeShapeRef.current !== "text") {
+        if (activeShapeRef.current === "freeHand") {
+          activeDraw.current.points.push({
+            x: currentX.current,
+            y: currentY.current,
+          });
+        } else if (activeShapeRef.current !== "text") {
           ((activeDraw.current!.endX = currentX.current),
             (activeDraw.current!.endY = currentY.current));
 
@@ -245,12 +253,12 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
           activeShapeRef.current === "line" ||
           activeShapeRef.current === "arrow"
         ) {
-          // activeDraw.current!.points = [
-          //   {
-          //     x: (activeDraw.current?.startX! + activeDraw.current?.endX!) / 2,
-          //     y: (activeDraw.current?.startY! + activeDraw.current?.endY!) / 2,
-          //   },
-          // ];
+          activeDraw.current!.points = [
+            {
+              x: (activeDraw.current?.startX! + activeDraw.current?.endX!) / 2,
+              y: (activeDraw.current?.startY! + activeDraw.current?.endY!) / 2,
+            },
+          ];
         }
 
         diagrams.current.push(activeDraw.current!);

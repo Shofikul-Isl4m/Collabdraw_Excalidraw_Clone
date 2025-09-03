@@ -37,6 +37,9 @@ export const renderDraws = (
       case "arrow":
         renderArrow(ctx, diagram);
         break;
+      case "freeHand":
+        renderFreeHand(ctx, diagram);
+        break;
     }
   });
 
@@ -56,6 +59,9 @@ export const renderDraws = (
         break;
       case "arrow":
         renderArrow(ctx, activeDraw);
+        break;
+      case "freeHand":
+        renderFreeHand(ctx, activeDraw);
         break;
     }
   }
@@ -213,5 +219,22 @@ export const renderDraws = (
     ctx.stroke();
     ctx.restore();
     ctx.closePath();
+  }
+
+  function renderFreeHand(ctx: CanvasRenderingContext2D, diagram: Draw) {
+    ctx.beginPath();
+    ctx.moveTo(diagram.points[0]!.x, diagram.points[0]!.y);
+    for (let i = 1; i < diagram.points.length - 2; i += 2) {
+      let xc = (diagram.points[i]!.x + diagram.points[i + 2]!.x) / 2;
+      let yc = (diagram.points[i]!.y + diagram.points[i + 2]!.y) / 2;
+
+      ctx.quadraticCurveTo(diagram.points[i]!.x, diagram.points[i]!.y, xc, yc);
+    }
+
+    ctx.lineTo(
+      diagram.points[diagram.points.length - 1]!.x,
+      diagram.points[diagram.points.length - 1]!.y
+    );
+    ctx.stroke();
   }
 };
