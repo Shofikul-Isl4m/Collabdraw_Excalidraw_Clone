@@ -1,4 +1,29 @@
-import { Action, Draw } from "@/types";
+import { Action, Draw, Rooms, User } from "@/types";
+import { act } from "react";
+
+export const pushToUndoRedoArray = (
+  action: Action,
+  undoRedoArray: Action[],
+  undoRedoIndex: number,
+  socket: WebSocket,
+  userId: User,
+  roomId: Rooms
+) => {
+  if (undoRedoArray.length > 50) {
+    undoRedoArray.shift();
+  }
+
+  if (undoRedoIndex < undoRedoArray.length - 1) {
+    undoRedoArray.splice(
+      undoRedoIndex + 1,
+      undoRedoArray.length - 1 - undoRedoIndex
+    );
+  }
+
+  undoRedoArray.push(action);
+  undoRedoIndex = undoRedoArray.length - 1;
+  return { undoRedoArray, undoRedoIndex };
+};
 
 export const performAction = (action: Action, diagrams: Draw[]) => {
   switch (action.type) {

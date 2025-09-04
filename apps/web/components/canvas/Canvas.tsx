@@ -1,7 +1,7 @@
 "use client";
 
 import { useWebSocket } from "@/lib/hooks/websocket";
-import { Draw, Message } from "@/types";
+import { Action, Draw, Message } from "@/types";
 import { Button } from "@repo/ui/components/ui/button";
 import { TooltipProvider } from "@repo/ui/components/ui/tooltip";
 
@@ -28,7 +28,10 @@ import {
 } from "react-icons/pi";
 import ChatBar from "./ChatBar";
 import { useAppSelector } from "@/lib/hooks/redux";
-import { performAction } from "@/lib/canvas/actionRelatedFunctions";
+import {
+  performAction,
+  pushToUndoRedoArrayRef,
+} from "@/lib/canvas/actionRelatedFunctions";
 import { fetchAllChatMessages } from "@/actions/chatAction";
 import { LiaHandPaper, LiaHandRock } from "react-icons/lia";
 import { BsFonts } from "react-icons/bs";
@@ -44,6 +47,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const chatMessageInputRef = useRef<HTMLTextAreaElement>(null);
   const [serverReady, setServerReady] = useState(false);
   const activeDraw = useRef<Draw>(null);
+  const textInp = useRef<string>("");
   const [isLoadingMoreMessages, setIsLoadingMoreMessages] =
     useState<boolean>(false);
   const lastSrNoRef = useRef<number>(0);
@@ -80,6 +84,12 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const activeFontRef = useRef(activeFont);
   const currentX = useRef<number>(null);
   const currentY = useRef<number>(null);
+  const originalDrawState = useRef<Draw>(null);
+  const modifiedDrawState = useRef<Draw>(null);
+  const undoRedoArrayRef = useRef<Action[]>([]);
+  const undoRedoIndexRef = useRef<number>(-1);
+  const [canRedo, setCanRedo] = useState<boolean>(false);
+  const [canundo, setCanUndo] = useState<boolean>(false);
 
   useEffect(() => {
     activeShapeRef.current = activeShape;
@@ -172,28 +182,38 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
 
     const handleMouseDown = (event: MouseEvent) => {
       setIsDragging(true);
+      if (activeActionRef.current === "draw") {
+        if (activeDraw.current && activeDraw.current.shape === "text") {
+          diagrams.current.push(activeDraw.current);
+        }
 
-      const currentActiveShape = activeShapeRef.current;
-      const isDrawing = currentActiveShape === "freeHand";
-      const isLineOrArrow =
-        currentActiveShape === "line" || currentActiveShape === "arrow";
-      if (activeActionRef.current === "draw")
-        activeDraw.current = {
-          id: Date.now().toString() + "-" + user?.id,
-          shape: activeShapeRef.current,
-          strokeStyle: activeStrokeStyleRef.current,
-          fillStyle: activeFillStyleRef.current,
-          linewidth: activeLineWidthRef.current,
-          points:
-            isDrawing || isLineOrArrow
-              ? [{ x: event.offsetX, y: event.offsetY }]
-              : [],
-          startX: isDrawing ? undefined : event.offsetX,
-          startY: isDrawing ? undefined : event.offsetY,
-          text: "",
-          font: activeFontRef.current,
-          fontSize: activeFontSizeRef.current,
-        };
+        const currentActiveShape = activeShapeRef.current;
+        const isDrawing = currentActiveShape === "freeHand";
+        const isText = currentActiveShape === "text";
+        const isLineOrArrow =
+          currentActiveShape === "line" || currentActiveShape === "arrow";
+        if (activeActionRef.current === "draw")
+          activeDraw.current = {
+            id: Date.now().toString() + "-" + user?.id,
+            shape: activeShapeRef.current,
+            strokeStyle: activeStrokeStyleRef.current,
+            fillStyle: isText
+              ? activeStrokeStyleRef.current
+              : isDrawing
+                ? "transparent"
+                : activeFillStyleRef.current,
+            linewidth: activeLineWidthRef.current,
+            points:
+              isDrawing || isLineOrArrow
+                ? [{ x: event.offsetX, y: event.offsetY }]
+                : [],
+            startX: isDrawing ? undefined : event.offsetX,
+            startY: isDrawing ? undefined : event.offsetY,
+            text: isText ? textInp.current : "",
+            font: activeFontRef.current,
+            fontSize: activeFontSizeRef.current,
+          };
+      }
     };
 
     const handleMouseMove = (event: MouseEvent) => {
@@ -223,6 +243,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
               },
             ];
           }
+        } else {
         }
       }
     };
@@ -230,45 +251,106 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
     const handleMouseUp = (event: MouseEvent) => {
       setIsDragging(false);
 
-      if (activeShapeRef.current !== "freeHand") {
-        activeDraw.current!.endX = event.offsetX;
-        activeDraw.current!.endY = event.offsetY;
+      if (activeActionRef.current === "draw") {
+        if (activeShapeRef.current === "text") return;
 
-        if (
-          activeShapeRef.current === "rectangle" ||
-          activeShapeRef.current === "diamond" ||
-          activeShapeRef.current === "circle"
-        ) {
-          if (activeDraw.current?.endX! < activeDraw.current?.startX!) {
-            let a = activeDraw.current!.endX;
-            activeDraw.current!.startX = a;
-            activeDraw.current!.endX = activeDraw.current!.startX;
+        if (activeShapeRef.current !== "freeHand") {
+          activeDraw.current!.endX = event.offsetX;
+          activeDraw.current!.endY = event.offsetY;
+
+          if (
+            activeShapeRef.current === "rectangle" ||
+            activeShapeRef.current === "diamond" ||
+            activeShapeRef.current === "circle"
+          ) {
+            if (activeDraw.current?.endX! < activeDraw.current?.startX!) {
+              let a = activeDraw.current!.endX;
+              activeDraw.current!.startX = a;
+              activeDraw.current!.endX = activeDraw.current!.startX;
+            }
+            if (activeDraw.current?.endY! < activeDraw.current?.startY!) {
+              let a = activeDraw.current!.endY;
+              activeDraw.current!.startY = a;
+              activeDraw.current!.endY = activeDraw.current!.startY;
+            }
+          } else if (
+            activeShapeRef.current === "line" ||
+            activeShapeRef.current === "arrow"
+          ) {
+            activeDraw.current!.points = [
+              {
+                x:
+                  (activeDraw.current?.startX! + activeDraw.current?.endX!) / 2,
+                y:
+                  (activeDraw.current?.startY! + activeDraw.current?.endY!) / 2,
+              },
+            ];
           }
-          if (activeDraw.current?.endY! < activeDraw.current?.startY!) {
-            let a = activeDraw.current!.endY;
-            activeDraw.current!.startY = a;
-            activeDraw.current!.endY = activeDraw.current!.startY;
-          }
-        } else if (
-          activeShapeRef.current === "line" ||
-          activeShapeRef.current === "arrow"
-        ) {
-          activeDraw.current!.points = [
-            {
-              x: (activeDraw.current?.startX! + activeDraw.current?.endX!) / 2,
-              y: (activeDraw.current?.startY! + activeDraw.current?.endY!) / 2,
-            },
-          ];
         }
-
         diagrams.current.push(activeDraw.current!);
         activeDraw.current = null;
+      }
+    };
+
+    const updateUndoRedoState = () => {
+      if (undoRedoIndexRef.current > 0) {
+        setCanUndo(true);
+      }
+      if (undoRedoIndexRef.current < undoRedoArrayRef.current.length - 1)
+        setCanRedo(true);
+    };
+
+    const handlekeyDown = (event: KeyboardEvent) => {
+      if (activeActionRef.current === "select") {
+        return;
+      }
+      if (activeActionRef.current === "draw") {
+        if (!activeDraw.current || activeDraw.current.shape !== "text") {
+          return;
+        }
+        event.preventDefault();
+        if (event.key === "Enter") {
+          diagrams.current.push(activeDraw.current);
+          if (socket) {
+            const action: Action = {
+              type: "create",
+              originalDraw: null,
+              modifiedDraw: JSON.parse(JSON.stringify(activeDraw.current)),
+            };
+
+            const { undoRedoArray, undoRedoIndex } = pushToUndoRedoArrayRef(
+              action,
+              undoRedoArrayRef.current,
+              undoRedoIndexRef,
+              socket,
+              user?.id,
+              roomId
+            );
+            originalDrawState.current = null;
+            modifiedDrawState.current = null;
+            undoRedoArrayRef.current = undoRedoArray;
+            undoRedoIndexRef.current = undoRedoIndex;
+            updateUndoRedoState();
+          }
+          textInp.current = "";
+          activeDraw.current = null;
+        } else if (event.key === "Escape") {
+          textInp.current = "";
+          activeDraw.current = null;
+        } else if (event.key === "Backspace") {
+          textInp.current = textInp.current.slice(0, -1);
+          activeDraw.current.text = textInp.current;
+        } else if (event.key.length === 1) {
+          textInp.current += event.key;
+          activeDraw.current.text = textInp.current;
+        }
       }
     };
 
     canvasCurrent.addEventListener("mousedown", handleMouseDown);
     canvasCurrent.addEventListener("mousemove", handleMouseMove);
     canvasCurrent.addEventListener("mouseup", handleMouseUp);
+    canvasCurrent.addEventListener("keydown", handlekeyDown);
   }, []);
 
   useEffect(() => {

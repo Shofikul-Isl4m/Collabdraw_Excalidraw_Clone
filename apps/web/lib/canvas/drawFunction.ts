@@ -40,6 +40,9 @@ export const renderDraws = (
       case "freeHand":
         renderFreeHand(ctx, diagram);
         break;
+      case "text":
+        renderText(ctx, diagram);
+        break;
     }
   });
 
@@ -62,6 +65,10 @@ export const renderDraws = (
         break;
       case "freeHand":
         renderFreeHand(ctx, activeDraw);
+        break;
+      case "text":
+        renderText(ctx, activeDraw);
+        renderCursor(ctx, activeDraw);
         break;
     }
   }
@@ -216,6 +223,11 @@ export const renderDraws = (
       p2.x! - headLength * Math.cos(angle - Math.PI / 10),
       p2.y! - headLength * Math.sin(angle - Math.PI / 10)
     );
+    ctx.moveTo(p2.x!, p2.y!);
+    ctx.lineTo(
+      p2.x! - headLength * Math.cos(angle + Math.PI / 10),
+      p2.y! - headLength * Math.sin(angle + Math.PI / 10)
+    );
     ctx.stroke();
     ctx.restore();
     ctx.closePath();
@@ -236,5 +248,27 @@ export const renderDraws = (
       diagram.points[diagram.points.length - 1]!.y
     );
     ctx.stroke();
+  }
+
+  function renderText(ctx: CanvasRenderingContext2D, diagram: Draw) {
+    ctx.font = `${diagram.fontSize}px ${diagram.font}`;
+    ctx.fillStyle = diagram.strokeStyle;
+    ctx.fillText(diagram.text!, diagram.startX!, diagram.startY!);
+  }
+
+  function renderCursor(ctx: CanvasRenderingContext2D, diagram: Draw) {
+    ctx.font = `${diagram.fontSize!}px ${diagram.font!}`;
+    const textWidth = ctx.measureText(diagram.text!).width;
+    const cursorX = diagram.startX! + textWidth;
+    const cursorY = diagram.startY!;
+
+    if (Math.floor(Date.now() / 600) % 2) {
+      ctx.beginPath();
+      ctx.moveTo(cursorX, cursorY + 3);
+      ctx.lineTo(cursorX, cursorY - parseInt(diagram.fontSize!) - 3);
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
   }
 };
