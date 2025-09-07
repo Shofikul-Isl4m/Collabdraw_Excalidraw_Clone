@@ -1,13 +1,13 @@
 import { Action, Draw, Rooms, User } from "@/types";
 import { act } from "react";
 
-export const pushToUndoRedoArray = (
+export const pushToUndoRedoArrayRef = (
   action: Action,
   undoRedoArray: Action[],
   undoRedoIndex: number,
   socket: WebSocket,
-  userId: User,
-  roomId: Rooms
+  userId: string,
+  roomId: string
 ) => {
   if (undoRedoArray.length > 50) {
     undoRedoArray.shift();

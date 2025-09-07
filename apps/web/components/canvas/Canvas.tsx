@@ -37,7 +37,7 @@ import { LiaHandPaper, LiaHandRock } from "react-icons/lia";
 import { BsFonts } from "react-icons/bs";
 import { TbZoom } from "react-icons/tb";
 import { current } from "@reduxjs/toolkit";
-import { renderDraws } from "@/lib/canvas/drawFunction";
+import { renderDraws } from "@/lib/canvas/drawFunctions";
 import { Lectern } from "lucide-react";
 
 const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
@@ -53,6 +53,11 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const lastSrNoRef = useRef<number>(0);
   const diagrams = useRef<Draw[]>([]);
   const user = useAppSelector((state) => state.app.user);
+  const panOffset = useRef<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+  const scale = useRef<number>(1);
   const [activeAction, setActiveAction] = useState<
     "select" | "draw" | "move" | "erase" | "resize" | "pan" | "zoom" | "edit"
   >("select");
@@ -90,6 +95,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const undoRedoIndexRef = useRef<number>(-1);
   const [canRedo, setCanRedo] = useState<boolean>(false);
   const [canundo, setCanUndo] = useState<boolean>(false);
+  const panStartPoint = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     activeShapeRef.current = activeShape;
@@ -175,13 +181,35 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
     if (!canvasRef.current) return;
     const canvasCurrent = canvasRef.current;
     const ctx = canvasCurrent.getContext("2d");
+    if (!ctx) return;
+
+    canvasCurrent.focus();
 
     setInterval(() => {
-      renderDraws(ctx!, diagrams.current, activeDraw.current!, canvasCurrent);
+      renderDraws(
+        ctx!,
+        diagrams.current,
+        activeDraw.current!,
+        canvasCurrent,
+        panOffset.current,
+        scale.current
+      );
     }, 15);
+
+    const getMousePosition = (event: MouseEvent) => {
+      return {
+        offsetX: (event.offsetX - panOffset.current.x) / scale.current,
+        offsetY: (event.offsetY - panOffset.current.y) / scale.current,
+      };
+    };
 
     const handleMouseDown = (event: MouseEvent) => {
       setIsDragging(true);
+      if (activeActionRef.current === "pan") {
+        panStartPoint.current = { x: event.offsetX, y: event.offsetY };
+        return;
+      }
+      const { offsetX, offsetY } = getMousePosition(event);
       if (activeActionRef.current === "draw") {
         if (activeDraw.current && activeDraw.current.shape === "text") {
           diagrams.current.push(activeDraw.current);
@@ -204,11 +232,9 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
                 : activeFillStyleRef.current,
             linewidth: activeLineWidthRef.current,
             points:
-              isDrawing || isLineOrArrow
-                ? [{ x: event.offsetX, y: event.offsetY }]
-                : [],
-            startX: isDrawing ? undefined : event.offsetX,
-            startY: isDrawing ? undefined : event.offsetY,
+              isDrawing || isLineOrArrow ? [{ x: offsetX, y: offsetY }] : [],
+            startX: isDrawing ? undefined : offsetX,
+            startY: isDrawing ? undefined : offsetY,
             text: isText ? textInp.current : "",
             font: activeFontRef.current,
             fontSize: activeFontSizeRef.current,
@@ -217,11 +243,27 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
     };
 
     const handleMouseMove = (event: MouseEvent) => {
-      if (!activeDraw.current) return;
-      currentX.current = event.offsetX;
-      currentY.current = event.offsetY;
+      const canvasCurrent = canvasRef.current!;
+      if (activeActionRef.current === "pan") {
+        if (isDraggingRef.current) {
+          canvasCurrent.style.cursor = "grabbing";
+          const dx = event.offsetX - panStartPoint.current.x;
+          const dy = event.offsetY - panStartPoint.current.y;
+          panOffset.current.x += dx;
+          panOffset.current.y += dy;
+          panStartPoint.current.x = event.offsetX;
+          panStartPoint.current.y = event.offsetY;
+        } else {
+          canvasCurrent.style.cursor = "grab";
+        }
+      }
+
+      const { offsetX, offsetY } = getMousePosition(event);
 
       if (activeActionRef.current === "draw") {
+        if (!activeDraw.current) return;
+        currentX.current = offsetX;
+        currentY.current = offsetY;
         if (!activeActionRef.current) return;
         if (activeShapeRef.current === "freeHand") {
           activeDraw.current.points.push({
@@ -249,14 +291,21 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
     };
 
     const handleMouseUp = (event: MouseEvent) => {
+      const canvasCurrent = canvasRef.current!;
       setIsDragging(false);
+
+      if (activeActionRef.current === "pan") {
+        canvasCurrent.style.cursor = "grab";
+        return;
+      }
+      const { offsetX, offsetY } = getMousePosition(event);
 
       if (activeActionRef.current === "draw") {
         if (activeShapeRef.current === "text") return;
 
         if (activeShapeRef.current !== "freeHand") {
-          activeDraw.current!.endX = event.offsetX;
-          activeDraw.current!.endY = event.offsetY;
+          activeDraw.current!.endX = offsetX;
+          activeDraw.current!.endY = offsetY;
 
           if (
             activeShapeRef.current === "rectangle" ||
@@ -265,13 +314,15 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
           ) {
             if (activeDraw.current?.endX! < activeDraw.current?.startX!) {
               let a = activeDraw.current!.endX;
-              activeDraw.current!.startX = a;
+
               activeDraw.current!.endX = activeDraw.current!.startX;
+              activeDraw.current!.startX = a;
             }
             if (activeDraw.current?.endY! < activeDraw.current?.startY!) {
               let a = activeDraw.current!.endY;
-              activeDraw.current!.startY = a;
+
               activeDraw.current!.endY = activeDraw.current!.startY;
+              activeDraw.current!.startY = a;
             }
           } else if (
             activeShapeRef.current === "line" ||
@@ -321,9 +372,9 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
             const { undoRedoArray, undoRedoIndex } = pushToUndoRedoArrayRef(
               action,
               undoRedoArrayRef.current,
-              undoRedoIndexRef,
+              undoRedoIndexRef.current,
               socket,
-              user?.id,
+              user?.id!,
               roomId
             );
             originalDrawState.current = null;
@@ -347,11 +398,50 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
       }
     };
 
+    const handleScroll = (event: WheelEvent) => {
+      event.preventDefault();
+      const { offsetX, offsetY } = getMousePosition(event);
+
+      if (activeActionRef.current === "zoom" || event.ctrlKey) {
+        const zoomSensitivity = 0.01;
+        const newScale = scale.current - event.deltaY * zoomSensitivity;
+        zoomAtPoint(newScale, offsetX, offsetY);
+      } else {
+        panOffset.current.x -= event.deltaX;
+        panOffset.current.y -= event.deltaY;
+      }
+    };
+
     canvasCurrent.addEventListener("mousedown", handleMouseDown);
     canvasCurrent.addEventListener("mousemove", handleMouseMove);
     canvasCurrent.addEventListener("mouseup", handleMouseUp);
     canvasCurrent.addEventListener("keydown", handlekeyDown);
-  }, []);
+    canvasCurrent.addEventListener("wheel", handleScroll);
+
+    return () => {
+      canvasCurrent.removeEventListener("mousedown", handleMouseDown);
+      canvasCurrent.removeEventListener("mousemove", handleMouseMove);
+      canvasCurrent.removeEventListener("mouseup", handleMouseUp);
+      canvasCurrent.removeEventListener("wheel", handleScroll);
+    };
+  }, [socket]);
+  useEffect(() => {
+    console.log(isDragging);
+  }, [isDragging]);
+
+  const zoomAtPoint = (newScale: number, offsetX: number, offsetY: number) => {
+    const canvasCurrent = canvasRef.current;
+    if (!canvasCurrent) return;
+    const measureScale = Math.max(0.3, Math.min(newScale, 10));
+
+    const worldX = (offsetX - panOffset.current.x) / scale.current;
+    const worldY = (offsetY - panOffset.current.y) / scale.current;
+
+    panOffset.current.x = offsetX - worldX * measureScale;
+    panOffset.current.y = offsetY - worldY * measureScale;
+
+    scale.current = measureScale;
+  };
 
   useEffect(() => {
     if (socket && user && !isError && !isLoading) {
