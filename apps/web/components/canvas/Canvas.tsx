@@ -210,6 +210,11 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
         return;
       }
       const { offsetX, offsetY } = getMousePosition(event);
+
+      if (activeActionRef.current === "select") {
+        const draw = getDrawAtPosition(offsetX, offsetY, diagrams.current, ctx);
+      }
+
       if (activeActionRef.current === "draw") {
         if (activeDraw.current && activeDraw.current.shape === "text") {
           diagrams.current.push(activeDraw.current);
