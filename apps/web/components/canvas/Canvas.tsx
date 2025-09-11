@@ -39,6 +39,7 @@ import { TbZoom } from "react-icons/tb";
 import { current } from "@reduxjs/toolkit";
 import { renderDraws } from "@/lib/canvas/drawFunctions";
 import { Lectern } from "lucide-react";
+import { getDrawAtPosition } from "@/lib/canvas/SelectedFunction";
 
 const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const unreadMessagesRef = useRef<boolean>(false);
