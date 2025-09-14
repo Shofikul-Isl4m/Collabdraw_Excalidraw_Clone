@@ -40,6 +40,7 @@ import { current } from "@reduxjs/toolkit";
 import { renderDraws } from "@/lib/canvas/drawFunctions";
 import { Lectern } from "lucide-react";
 import { getDrawAtPosition } from "@/lib/canvas/SelectedFunction";
+import { handleShapeSelectionBox } from "@/lib/canvas/updateFunctions";
 
 const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const unreadMessagesRef = useRef<boolean>(false);
@@ -55,6 +56,10 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const diagrams = useRef<Draw[]>([]);
   const user = useAppSelector((state) => state.app.user);
   const panOffset = useRef<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+  const movingOffset = useRef<{ x: number; y: number }>({
     x: 0,
     y: 0,
   });
@@ -97,6 +102,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const [canRedo, setCanRedo] = useState<boolean>(false);
   const [canundo, setCanUndo] = useState<boolean>(false);
   const panStartPoint = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const shapeSelectionBox = useRef<Draw>(null);
 
   useEffect(() => {
     activeShapeRef.current = activeShape;
@@ -191,6 +197,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
         ctx!,
         diagrams.current,
         activeDraw.current!,
+        shapeSelectionBox.current,
         canvasCurrent,
         panOffset.current,
         scale.current
@@ -214,6 +221,33 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
 
       if (activeActionRef.current === "select") {
         const draw = getDrawAtPosition(offsetX, offsetY, diagrams.current, ctx);
+
+        const hoveredSelectionBox = hoverOverSelectionBox(
+          shapeSelectionBox.current,
+          offsetX,
+          offsetY
+        );
+
+        if (draw && !hoveredSelectionBox) {
+          setActiveStrokeStyle(draw.strokeStyle);
+          setActiveFillStyle(draw.fillStyle);
+          setActiveLineWidth(draw.linewidth);
+          if (draw.shape === "text") {
+            setActiveFont(draw.font);
+            setActiveFontSize(draw.fontSize);
+          }
+        }
+
+        if (draw?.shape === "text") {
+          currentX.current = offsetX;
+          currentY.current = offsetY;
+        }
+
+        if (draw && !hoveredSelectionBox?.points.includes("point")) {
+          shapeSelectionBox.current = handleShapeSelectionBox(draw, ctx);
+          setActiveAction("move");
+          movingOffset.curr;
+        }
       }
 
       if (activeActionRef.current === "draw") {

@@ -515,3 +515,116 @@ function isPointInTriangle(
 
   return A < 0 ? s <= 0 && s + t >= A : s >= 0 && s + t <= A;
 }
+
+type selectionBoxType = (
+  selectionBox: Draw | null,
+  x: number,
+  y: number
+) => {
+  cursor: string;
+  position:
+    | "topRight"
+    | "topLeft"
+    | "bottomLeft"
+    | "bottomRight"
+    | "left"
+    | "right"
+    | "top"
+    | "bottom";
+} | null;
+
+export const hoveredSelectionBox: selectionBoxType = (selectionBox, x, y) => {
+  if (!selectionBox) {
+    return null;
+  }
+
+  const topLeft = { x: selectionBox.startX!, y: selectionBox.startY! };
+  const topRight = { x: selectionBox.endX!, y: selectionBox.startY! };
+  const bottomRight = { x: selectionBox.endX!, y: selectionBox.endY! };
+  const bottomLeft = { x: selectionBox.startX!, y: selectionBox.endY! };
+
+  const leftEdge = {
+    x1: topLeft.x,
+    y1: topLeft.y,
+    x2: bottomLeft.x,
+    y2: bottomLeft.y,
+  };
+  const rightEdge = {
+    x1: topRight.x,
+    y1: topRight.y,
+    x2: bottomRight.x,
+    y2: bottomRight.y,
+  };
+  const topEdge = {
+    x1: topLeft.x,
+    y1: topLeft.y,
+    x2: topRight.x,
+    y2: topRight.y,
+  };
+  const bottomEdge = {
+    x1: bottomLeft.x,
+    y1: bottomLeft.y,
+    x2: bottomRight.x,
+    y2: bottomRight.y,
+  };
+
+  if (
+    x >= topLeft.x - 4 &&
+    x <= topLeft.x + 4 &&
+    y >= topLeft.y - 4 &&
+    y <= topLeft.y + 4
+  ) {
+    return { cursor: "nwse-resize", position: "topLeft" };
+  } else if (
+    x >= topRight.x - 4 &&
+    x <= topRight.x + 4 &&
+    y >= topRight.y - 4 &&
+    y <= topRight.y + 4
+  ) {
+    return { cursor: "nesw-resize", position: "topRight" };
+  } else if (
+    x >= bottomRight.x - 4 &&
+    x <= bottomRight.x + 4 &&
+    y >= bottomRight.y - 4 &&
+    y <= bottomRight.y + 4
+  ) {
+    return { cursor: "nwse-resize", position: "bottomRight" };
+  } else if (
+    x >= bottomLeft.x - 4 &&
+    x <= bottomLeft.x + 4 &&
+    y >= bottomLeft.y - 4 &&
+    y <= bottomLeft.y + 4
+  ) {
+    return { cursor: "nesw-resize", position: "bottomLeft" };
+  } else if (
+    x >= leftEdge.x1 - 4 &&
+    x <= leftEdge.x2 + 4 &&
+    y >= leftEdge.y1 - 4 &&
+    y <= leftEdge.y2 + 4
+  ) {
+    return { cursor: "ew-resize", position: "left" };
+  } else if (
+    x >= rightEdge.x1 - 4 &&
+    x <= rightEdge.x2 + 4 &&
+    y >= rightEdge.y1 - 4 &&
+    y <= rightEdge.y2 + 4
+  ) {
+    return { cursor: "ew-resize", position: "right" };
+  } else if (
+    y >= topEdge.y1 - 4 &&
+    y <= topEdge.y2 + 4 &&
+    x >= topEdge.x1 - 4 &&
+    x <= topEdge.x2 + 4
+  ) {
+    return { cursor: "ns-resize", position: "top" };
+  } else if (
+    y >= bottomEdge.y1 - 4 &&
+    y <= bottomEdge.y2 + 4 &&
+    x >= bottomEdge.x1 - 4 &&
+    x <= bottomEdge.x2 + 4
+  ) {
+    return { cursor: "ns-resize", position: "bottom" };
+  }
+
+  return null;
+};

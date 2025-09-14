@@ -3,7 +3,8 @@ import { Draw } from "@/types";
 export const renderDraws = (
   ctx: CanvasRenderingContext2D,
   diagrams: Draw[],
-  activeDraw: Draw,
+  activeDraw: Draw | null,
+  selectionBox: Draw | null,
   canvasCurrent: HTMLCanvasElement,
   panOffset: { x: number; y: number },
   scale: number
@@ -85,6 +86,10 @@ export const renderDraws = (
         renderCursor(ctx, activeDraw);
         break;
     }
+  }
+
+  if (selectionBox) {
+    renderSelectionBox(selectionBox, ctx);
   }
 
   ctx.restore();
@@ -287,4 +292,108 @@ function renderCursor(ctx: CanvasRenderingContext2D, diagram: Draw) {
     ctx.lineWidth = 2;
     ctx.stroke();
   }
+}
+
+function renderSelectionBox(
+  selectionBox: Draw | null,
+  ctx: CanvasRenderingContext2D
+) {
+  if (selectionBox?.strokeStyle) {
+    ctx.strokeStyle = selectionBox.strokeStyle;
+  }
+
+  if (selectionBox?.fillStyle) {
+    ctx.fillStyle = selectionBox.fillStyle;
+  }
+
+  if (selectionBox?.linewidth) {
+    ctx.lineWidth = selectionBox.linewidth;
+  }
+
+  const corner_1 = { x: selectionBox?.startX, y: selectionBox?.startY };
+  const corner_2 = { x: selectionBox?.endX, y: selectionBox?.startY };
+  const corner_3 = { x: selectionBox?.startX, y: selectionBox?.endY };
+  const corner_4 = { x: selectionBox?.endX, y: selectionBox?.endY };
+
+  ctx.beginPath();
+  ctx.strokeRect(
+    selectionBox?.startX!,
+    selectionBox?.startY!,
+    selectionBox?.endX! - selectionBox?.startX!,
+    selectionBox?.startY! - selectionBox?.endY!
+  );
+  ctx.fillStyle = "#cccccc";
+  ctx.lineWidth = 1;
+
+  if (selectionBox?.text === "text") {
+    ctx.beginPath();
+    ctx.arc(corner_3.x!, corner_3.y!, 3, 0, 2 * Math.PI);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+  } else {
+    ctx.fillRect(corner_1.x! - 4, corner_1.y! - 4, 8, 8);
+    ctx.fillRect(corner_1.x! - 4, corner_1.y! - 4, 8, 8);
+    ctx.fillRect(corner_1.x! - 4, corner_1.y! - 4, 8, 8);
+    ctx.fillRect(corner_1.x! - 4, corner_1.y! - 4, 8, 8);
+
+    if (selectionBox?.points.length === 3) {
+      ctx.fillStyle = "#5588ff";
+      ctx.beginPath();
+      ctx.moveTo(selectionBox.points[0]!.x, selectionBox.points[0]!.y);
+      ctx.arc(
+        selectionBox.points[0]!.x,
+        selectionBox.points[0]!.y,
+        4,
+        0,
+        2 * Math.PI
+      );
+
+      ctx.moveTo(selectionBox.points[1]!.x, selectionBox.points[1]!.y);
+      ctx.arc(
+        selectionBox.points[1]!.x,
+        selectionBox.points[1]!.y,
+        4,
+        0,
+        2 * Math.PI
+      );
+      ctx.moveTo(selectionBox.points[2]!.x, selectionBox.points[2]!.y);
+      ctx.arc(
+        selectionBox.points[2]!.x,
+        selectionBox.points[2]!.y,
+        4,
+        0,
+        2 * Math.PI
+      );
+      ctx.fill();
+      ctx.fillStyle = "#5588ff70";
+      ctx.moveTo(selectionBox.points[0]!.x, selectionBox.points[0]!.y);
+      ctx.arc(
+        selectionBox.points[0]!.x,
+        selectionBox.points[0]!.y,
+        4,
+        0,
+        2 * Math.PI
+      );
+
+      ctx.moveTo(selectionBox.points[1]!.x, selectionBox.points[1]!.y);
+      ctx.arc(
+        selectionBox.points[1]!.x,
+        selectionBox.points[1]!.y,
+        4,
+        0,
+        2 * Math.PI
+      );
+      ctx.moveTo(selectionBox.points[2]!.x, selectionBox.points[2]!.y);
+      ctx.arc(
+        selectionBox.points[2]!.x,
+        selectionBox.points[2]!.y,
+        4,
+        0,
+        2 * Math.PI
+      );
+      ctx.fill();
+    }
+  }
+  ctx.closePath();
 }
