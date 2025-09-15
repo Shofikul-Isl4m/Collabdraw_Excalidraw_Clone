@@ -530,10 +530,15 @@ type selectionBoxType = (
     | "left"
     | "right"
     | "top"
-    | "bottom";
+    | "bottom"
+    | `point-${number}`;
 } | null;
 
-export const hoveredSelectionBox: selectionBoxType = (selectionBox, x, y) => {
+export const hoveredOverSelectionBox: selectionBoxType = (
+  selectionBox,
+  x,
+  y
+) => {
   if (!selectionBox) {
     return null;
   }
@@ -624,6 +629,20 @@ export const hoveredSelectionBox: selectionBoxType = (selectionBox, x, y) => {
     x <= bottomEdge.x2 + 4
   ) {
     return { cursor: "ns-resize", position: "bottom" };
+  }
+
+  if (selectionBox.points) {
+    for (let index = 0; index < selectionBox.points.length; index++) {
+      const point = selectionBox.points[index]!;
+      if (
+        point.x - 8 <= x &&
+        point.x + 8 >= x &&
+        point.y - 8 <= y &&
+        point.y + 8 >= y
+      ) {
+        return { cursor: "pointer", position: `point-${index}` };
+      }
+    }
   }
 
   return null;

@@ -1,5 +1,4 @@
 import { Action, Draw, Rooms, User } from "@/types";
-import { act } from "react";
 
 export const pushToUndoRedoArrayRef = (
   action: Action,

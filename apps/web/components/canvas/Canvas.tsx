@@ -39,8 +39,15 @@ import { TbZoom } from "react-icons/tb";
 import { current } from "@reduxjs/toolkit";
 import { renderDraws } from "@/lib/canvas/drawFunctions";
 import { Lectern } from "lucide-react";
-import { getDrawAtPosition } from "@/lib/canvas/SelectedFunction";
-import { handleShapeSelectionBox } from "@/lib/canvas/updateFunctions";
+import {
+  getDrawAtPosition,
+  hoveredOverSelectionBox,
+} from "@/lib/canvas/SelectedFunction";
+import {
+  handleShapeSelectionBox,
+  moveDraw,
+} from "@/lib/canvas/updateFunctions";
+import { json } from "stream/consumers";
 
 const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const unreadMessagesRef = useRef<boolean>(false);
@@ -103,6 +110,10 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
   const [canundo, setCanUndo] = useState<boolean>(false);
   const panStartPoint = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const shapeSelectionBox = useRef<Draw>(null);
+  const initialPointsForFreeHandMove = useRef<{
+    initialPoints: { x: number; y: number };
+    originalPoints: { x: number; y: number }[];
+  } | null>(null);
 
   useEffect(() => {
     activeShapeRef.current = activeShape;
@@ -222,7 +233,7 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
       if (activeActionRef.current === "select") {
         const draw = getDrawAtPosition(offsetX, offsetY, diagrams.current, ctx);
 
-        const hoveredSelectionBox = hoverOverSelectionBox(
+        const hoveredSelectionBox = hoveredOverSelectionBox(
           shapeSelectionBox.current,
           offsetX,
           offsetY
@@ -243,10 +254,27 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
           currentY.current = offsetY;
         }
 
-        if (draw && !hoveredSelectionBox?.points.includes("point")) {
+        if (draw && !hoveredSelectionBox?.position.includes("point")) {
           shapeSelectionBox.current = handleShapeSelectionBox(draw, ctx);
           setActiveAction("move");
-          movingOffset.curr;
+          movingOffset.current = {
+            x: offsetX - draw.startX!,
+            y: offsetY - draw.startY!,
+          };
+          initialPointsForFreeHandMove.current = {
+            initialPoints: {
+              x: offsetX,
+              y: offsetY,
+            },
+            originalPoints: draw.points
+              ? JSON.parse(JSON.stringify(draw.points))
+              : [],
+          };
+
+          selectedDraw.current = draw;
+          setSelectedShape(draw.shape);
+          setActiveShape(draw.shape);
+          originalDrawState.current = JSON.parse(JSON.stringify(draw));
         }
       }
 
@@ -300,6 +328,24 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
 
       const { offsetX, offsetY } = getMousePosition(event);
 
+      if (activeActionRef.current === "move") {
+        canvasCurrent.style.cursor === "move";
+
+        const draw = moveDraw(
+          offsetX,
+          offsetY,
+          movingOffset.current.x,
+          movingOffset.current.y,
+          initialPointsForFreeHandMove.current,
+          selectedDraw.current!,
+          diagrams.current
+        );
+
+        modifiedDrawState.current = JSON.parse(JSON.stringify(draw));
+        if (!draw) return;
+        shapeSelectionBox.current = handleShapeSelectionBox(draw, ctx);
+      }
+
       if (activeActionRef.current === "draw") {
         if (!activeDraw.current) return;
         currentX.current = offsetX;
@@ -339,6 +385,32 @@ const Canvas = ({ roomId, token }: { roomId: string; token: string }) => {
         return;
       }
       const { offsetX, offsetY } = getMousePosition(event);
+
+      if (activeActionRef.current === "move") {
+        if (originalDrawState.current && modifiedDrawState.current && socket) {
+          const action: Action = {
+            type: "move",
+            originalDraw: JSON.parse(JSON.stringify(originalDrawState.current)),
+            modifiedDraw: JSON.parse(JSON.stringify(modifiedDrawState.current)),
+          };
+
+          const { undoRedoArray, undoRedoIndex } = pushToUndoRedoArrayRef(
+            action,
+            undoRedoArrayRef.current,
+            undoRedoIndexRef.current,
+            socket,
+            user?.id!,
+            roomId
+          );
+
+          modifiedDrawState.current = null;
+          originalDrawState.current = null;
+          undoRedoArrayRef.current = undoRedoArray;
+          undoRedoIndexRef.current = undoRedoIndex;
+          updateUndoRedoState();
+        }
+        setActiveAction("select");
+      }
 
       if (activeActionRef.current === "draw") {
         if (activeShapeRef.current === "text") return;

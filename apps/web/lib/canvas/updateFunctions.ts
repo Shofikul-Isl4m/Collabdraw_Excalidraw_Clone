@@ -1,5 +1,68 @@
 import { Draw } from "@/types";
 
+type moveDrawType = (
+  x: number,
+  y: number,
+  offsetX: number,
+  offsetY: number,
+  initialPointforFreeHand: {
+    initialPoints: { x: number; y: number };
+    originalPoints: { x: number; y: number }[];
+  } | null,
+  selectedDraw: Draw,
+  diagrams: Draw[]
+) => Draw | null;
+
+export const moveDraw: moveDrawType = (
+  x,
+  y,
+  offsetX,
+  offsetY,
+  initialPointforFreeHand,
+  selectedDraw,
+  diagrams
+) => {
+  const oldStartX = selectedDraw!.startX!;
+  const oldStartY = selectedDraw?.startY;
+
+  const newStartX = x - offsetX;
+  const newStartY = y - offsetY;
+
+  const dx = newStartX - oldStartX;
+  const dy = newStartY - oldStartY!;
+
+  selectedDraw!.startX = newStartX;
+  selectedDraw!.startY = newStartY;
+  selectedDraw!.endX! += dx;
+  selectedDraw!.endY! += dy;
+
+  if (
+    (selectedDraw?.shape === "line" || selectedDraw!.shape === "arrow") &&
+    selectedDraw?.points
+  ) {
+    selectedDraw.points = selectedDraw?.points.map((point) => ({
+      x: point.x + dx,
+      y: point.y + dy,
+    }));
+  }
+
+  if (selectedDraw?.shape === "freeHand" && initialPointforFreeHand) {
+    const dx = x - initialPointforFreeHand.initialPoints.x;
+    const dy = x - initialPointforFreeHand.initialPoints.y;
+
+    selectedDraw.points = initialPointforFreeHand.originalPoints.map(
+      (point) => ({
+        x: point.x + dx,
+        y: point.y + dy,
+      })
+    );
+  }
+
+  const ind = diagrams.findIndex((draw) => draw.id === selectedDraw!.id);
+  diagrams[ind] = selectedDraw;
+  return selectedDraw;
+};
+
 type handleShapeSelectionBoxType = (
   draw: Draw,
   ctx: CanvasRenderingContext2D
